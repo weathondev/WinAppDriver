@@ -230,30 +230,30 @@ namespace WinAppDriverUIRecorder
         public string GetCSCode(string focusedElemName)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("// " + this.Description);
+            //sb.AppendLine("// " + this.Description);
 
-            string consoleWriteLine = "Console.WriteLine(\"" + this.Description.Replace("\"", "\\\"") + "\");";
-            sb.AppendLine(consoleWriteLine);
+            //string consoleWriteLine = "Console.WriteLine(\"" + this.Description.Replace("\"", "\\\"") + "\");";
+            //sb.AppendLine(consoleWriteLine);
 
             if (this.UiTaskName == EnumUiTaskName.LeftClick)
             {
-                sb.AppendLine(GenerateCSCode.LeftClick(this, VariableName));
+                sb.Append(GenerateCSCode.LeftClick(this, VariableName));
             }
             else if (this.UiTaskName == EnumUiTaskName.RightClick)
             {
-                sb.AppendLine(GenerateCSCode.RightClick(this, VariableName));
+                sb.Append(GenerateCSCode.RightClick(this, VariableName));
             }
             else if (this.UiTaskName == EnumUiTaskName.LeftDblClick)
             {
-                sb.AppendLine(GenerateCSCode.DoubleClick(this, VariableName));
+                sb.Append(GenerateCSCode.DoubleClick(this, VariableName));
             }
             else if (this.UiTaskName == EnumUiTaskName.MouseWheel)
             {
-                sb.AppendLine(GenerateCSCode.Wheel(this, VariableName));
+                sb.Append(GenerateCSCode.Wheel(this, VariableName));
             }
             else if (this.UiTaskName == EnumUiTaskName.KeyboardInput)
             {
-                sb.AppendLine(GenerateCSCode.SendKeys(this, focusedElemName));
+                sb.Append(GenerateCSCode.SendKeys(this, focusedElemName));
             }
 
             return sb.ToString();
@@ -290,7 +290,7 @@ namespace WinAppDriverUIRecorder
             if (string.IsNullOrEmpty(automationId))
                 return "//Couldn't find element by automationId";
 
-            return $"desktopSession.FindElementByAccessibilityId(\"{automationId}\").Click();\n";
+            return $"desktopSession.FindElementByAccessibilityId(\"{automationId}\").Click();";
         }
 
         public static string LeftClick(RecordedUiTask uiTask, string elemName)
