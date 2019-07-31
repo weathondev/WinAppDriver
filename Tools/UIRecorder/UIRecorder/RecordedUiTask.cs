@@ -45,6 +45,13 @@ namespace WinAppDriverUIRecorder
             ScrollLock = scrollLock;
         }
 
+        public string GetLastAutomationId()
+        {
+            this._strPath = GenerateXPath.GetAutomationIdOfUiElement(this, _pathNodes, ref _uiTreeNode).Trim();
+            string xPathRet = this._strPath;
+            return xPathRet;
+        }
+
         public string GetXPath(bool bExcludeSessionRootPath)
         {
             if (string.IsNullOrEmpty(this._strPath))
@@ -278,22 +285,12 @@ namespace WinAppDriverUIRecorder
     {
         public static string GetCodeBlock(RecordedUiTask uiTask, string elemName, string uiActionLine)
         {
-            var xpath = "xpath_" + elemName;
-            elemName = "winElem_" + elemName;
+            string automationId = uiTask.GetLastAutomationId();
 
-            string codeBlock = $"string {xpath} = {uiTask.GetXPath(true)};\n" +
-                $"var {elemName} = desktopSession.FindElementByAbsoluteXPath({xpath});\n" +
-                $"if ({elemName} != null)\n" +
-                "{\n" +
-                "CODEBLOCK" +
-                "}\n" +
-                "else\n" +
-                "{\n" +
-                "    Console.WriteLine($\"Failed to find element using xpath: {" + $"{xpath}" + "}\");\n" +
-                "    return;\n" +
-                "}\n";
+            if (string.IsNullOrEmpty(automationId))
+                return "//Couldn't find element by automationId";
 
-            return codeBlock.Replace("CODEBLOCK", uiActionLine);
+            return $"desktopSession.FindElementByAccessibilityId(\"{automationId}\").Click();\n";
         }
 
         public static string LeftClick(RecordedUiTask uiTask, string elemName)

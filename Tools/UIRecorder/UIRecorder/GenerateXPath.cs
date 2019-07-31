@@ -508,5 +508,169 @@ namespace WinAppDriverUIRecorder
 
             return "\"" + xPath + "\"";
         }
+
+        public static string GetAutomationIdOfUiElement(RecordedUiTask recordedUiTask, List<string> pathNodes, ref UiTreeNode rootRet)
+        {
+            string lastValidAutomationId = string.Empty;
+
+            rootRet = null;
+
+            string tag, ClassName, Name, AutomationId, Pos;
+            string xPath = "";
+
+            UiTreeNode parent = null;
+
+            for (int i = 0; i < pathNodes.Count; i++)
+            {
+                var nodePath = pathNodes[i];
+
+                bool bStartsWithName = false;
+                bool bStartsWithClass = false;
+                bool bStartsWithAutoId = false;
+
+                var tagAttrs = GetTagAttributes(nodePath);
+
+                tag = tagAttrs.ContainsKey("Tag") ? tagAttrs["Tag"] : "Unknown";
+
+                AutomationId = tagAttrs.ContainsKey("AutomationId") ? tagAttrs["AutomationId"] : null;
+
+                Name = tagAttrs.ContainsKey("Name") ? tagAttrs["Name"] : null;
+
+                ClassName = tagAttrs.ContainsKey("ClassName") ? tagAttrs["ClassName"] : null;
+                ClassName = CheckAndFixNoneStaticValue(ClassName);
+
+                Pos = tagAttrs.ContainsKey("position()") ? tagAttrs["position()"] : null;
+
+                string xPathNode = $"/{tag}";
+
+                // Set AutomationId to null if it is a GUID which is very likely generated at runtime
+                AutomationId = CheckAndFixNoneStaticValue(AutomationId);
+
+                // AutomationId (like UIs on Cortana search result list) created at runtime may end with digits
+                if (!string.IsNullOrEmpty(AutomationId) && !AutomationId.StartsWith("starts-with:"))
+                {
+                    string patAutoIdEndsWithDigits = @"^([^\d]*)[_\.\-\d]+$";
+                    System.Text.RegularExpressions.Regex regAutoId = new System.Text.RegularExpressions.Regex(patAutoIdEndsWithDigits, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    if (regAutoId != null)
+                    {
+                        System.Text.RegularExpressions.Match matchAutoId = regAutoId.Match(AutomationId);
+                        if (matchAutoId.Success && matchAutoId.Groups.Count > 1)
+                        {
+                            if (matchAutoId.Groups[1].Length > 0)
+                            {
+                                AutomationId = "starts-with:" + matchAutoId.Groups[1].ToString();
+                                bStartsWithAutoId = true;
+                            }
+                            else
+                            {
+                                AutomationId = null;
+                            }
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(ClassName) && string.IsNullOrEmpty(AutomationId))
+                {
+                    if (ClassName.StartsWith("starts-with:"))
+                    {
+                        ClassName = ClassName.Remove(0, "starts-with:".Length);
+                        xPathNode += string.Format(sNameStartsWithValue, "ClassName", ClassName);
+                        bStartsWithClass = true;
+                    }
+                    else
+                    {
+                        xPathNode += string.Format(sNameValue, "ClassName", ClassName);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(Name))
+                {
+                    if (Name.StartsWith("starts-with:"))
+                    {
+                        Name = Name.Remove(0, "starts-with:".Length);
+                        xPathNode += string.Format(sNameStartsWithValue, "Name", Name);
+                        bStartsWithName = true;
+                    }
+                    else
+                    {
+                        xPathNode += string.Format(sNameValue, "Name", Name);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(AutomationId))
+                {
+                    if (AutomationId.StartsWith("starts-with:"))
+                    {
+                        AutomationId = AutomationId.Remove(0, "starts-with:".Length);
+                        xPathNode += string.Format(sNameStartsWithValue, "AutomationId", AutomationId);
+                        bStartsWithAutoId = true;
+                    }
+                    else
+                    {
+                        xPathNode += string.Format(sNameValue, "AutomationId", AutomationId);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(Pos) && string.IsNullOrEmpty(AutomationId) && string.IsNullOrEmpty(Name) && string.IsNullOrEmpty(ClassName))
+                {
+                     xPathNode += $"[position()={Pos}]";
+                }
+
+                // UiTreeNode 
+                var left = tagAttrs.ContainsKey("x") ? tagAttrs["x"] : null;
+                var top = tagAttrs.ContainsKey("y") ? tagAttrs["y"] : null;
+                var leftLocal = tagAttrs.ContainsKey("lx") ? tagAttrs["lx"] : null;
+                var topLocal = tagAttrs.ContainsKey("ly") ? tagAttrs["ly"] : null;
+                var width = tagAttrs.ContainsKey("width") ? tagAttrs["width"] : null;
+                var height = tagAttrs.ContainsKey("height") ? tagAttrs["height"] : null;
+                var runtimeId = tagAttrs.ContainsKey("RuntimeId") ? tagAttrs["RuntimeId"] : null;
+
+                xPath += xPathNode;
+
+                var uiTreeNode = new UiTreeNode(parent) { Title = $"{tag}, \"{Name}\", {ClassName}" };
+
+                uiTreeNode.NodePath = xPathNode;
+                uiTreeNode.Tag = tag;
+                uiTreeNode.ClassName = ClassName;
+                uiTreeNode.Name = Name;
+                uiTreeNode.AutomationId = AutomationId;
+                uiTreeNode.Left = left;
+                uiTreeNode.Top = left;
+                uiTreeNode.Width = width;
+                uiTreeNode.Height = height;
+                uiTreeNode.RuntimeId = runtimeId;
+                uiTreeNode.Position = Pos;
+                uiTreeNode.NameCompareMethod = bStartsWithName ? UiTreeNode.CompareMethod.StartsWith : UiTreeNode.CompareMethod.Equal;
+                uiTreeNode.ClassNameCompareMethod = bStartsWithClass ? UiTreeNode.CompareMethod.StartsWith : UiTreeNode.CompareMethod.Equal;
+                uiTreeNode.AutomationIdCompareMethod = bStartsWithAutoId ? UiTreeNode.CompareMethod.StartsWith : UiTreeNode.CompareMethod.Equal;
+
+                if (i == pathNodes.Count - 1)
+                {
+                    uiTreeNode.UiTask = recordedUiTask;
+                    recordedUiTask.Left = left;
+                    recordedUiTask.Top = top;
+                    recordedUiTask.LeftLocal = leftLocal;
+                    recordedUiTask.TopLocal = topLocal;
+                    recordedUiTask.Name = Name;
+                    recordedUiTask.Tag = tag;
+                }
+
+                if (rootRet == null)
+                {
+                    rootRet = uiTreeNode;
+                }
+
+                if (parent != null)
+                {
+                    parent.Items.Add(uiTreeNode);
+                }
+
+                parent = uiTreeNode;
+
+                lastValidAutomationId = string.IsNullOrEmpty(AutomationId) ? lastValidAutomationId : AutomationId;
+            }
+
+            return lastValidAutomationId;
+        }
     }
 }

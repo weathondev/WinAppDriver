@@ -110,7 +110,7 @@ namespace WinAppDriverUIRecorder
         {
             if (recordedUi.GetUiTreeNode() == null)
             {
-                if (string.IsNullOrEmpty(recordedUi.GetXPath(false)))
+                if (string.IsNullOrEmpty(recordedUi.GetLastAutomationId()))
                 {
                     return;
                 }

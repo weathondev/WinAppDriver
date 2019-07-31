@@ -259,7 +259,7 @@ namespace WinAppDriverUIRecorder
             {
                 // xpath
                 TextRange tr = new TextRange(rtbXPath.Document.ContentStart, rtbXPath.Document.ContentEnd);
-                tr.Text = selectedItem.GetXPath(false);
+                tr.Text = selectedItem.GetLastAutomationId();
 
                 // TreeView
                 HighlightPath(0, true/*highlight session path*/);
@@ -814,7 +814,7 @@ namespace WinAppDriverUIRecorder
             var winEditAttr = new WindowEditNodeAttribute(uiTreeNode);
             if (true == winEditAttr.ShowDialog())
             {
-                var xpath = leafUiTask.GetXPath(false).Replace(oldNodePath, uiTreeNode.NodePath);
+                var xpath = leafUiTask.GetLastAutomationId().Replace(oldNodePath, uiTreeNode.NodePath);
                 var tr = new TextRange(rtbXPath.Document.ContentStart, rtbXPath.Document.ContentEnd);
                 tr.Text = leafUiTask.UpdateXPath(xpath);
             }
